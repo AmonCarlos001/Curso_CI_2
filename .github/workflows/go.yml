@@ -2,14 +2,14 @@ name: Go
 
 on:
   push:
-    branches: [ "Aula_1", "Aula_2", "Projeto_base" ]
+    branches: [ '*' ]
   pull_request:
-    branches: [ "Aula_1", "Aula_2", "Projeto_base" ]
+    branches: [ '*' ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
 
+  test:
+    runs-on: ${{ matrix.os }}
     env:
       HOST: localhost
       PORT: 5432
@@ -18,59 +18,34 @@ jobs:
       DBNAME: root
 
     strategy:
-      fail-fast: false
       matrix:
-        go_version: ['1.18', '1.20', '1.22']
+        go_version: ['1.18', '1.20', '>=1.18']
+        os: ['ubuntu-latest', 'ubuntu-18.04']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go_version }}
 
-      - name: Build containers
-        run: docker compose build
+      - name: Build-DB
+        run: docker-compose build
 
-      - name: Start containers
-        run: docker compose up -d
+      - name: Create-DB
+        run: docker-compose up -d
 
-      - name: Show containers
-        run: docker ps
-
-      - name: Wait PostgreSQL
-        run: |
-          echo "Waiting PostgreSQL..."
-          for i in {1..30}; do
-            docker exec $(docker ps -qf "ancestor=postgres") pg_isready && break
-            sleep 2
-          done
-
-      - name: Show containers
-        run: docker ps -a
-
-      - name: Database logs
-        run: docker compose logs postgres
-
-      - name: Check PostgreSQL readiness
-        run: |
-          docker exec $(docker ps -qf "ancestor=postgres") pg_isready || true
-
-      - name: Run tests
-        run: go test -v ./...
+      - name: Test
+        run: go test -v main_test.go
 
   build:
     needs: test
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'ubuntu-18.04']
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
+      - uses: actions/checkout@v3
       - name: Build
         run: go build -v main.go
