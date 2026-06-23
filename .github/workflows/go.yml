@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      HOST: localhost
+      HOST: 127.0.0.1
       PORT: 5432
       USER: root
       PASSWORD: root
@@ -31,6 +31,9 @@ jobs:
  
     - name: Create-DB
       run: docker compose up -d
+
+    - name: Wait For Database to be ready
+      run: sleep 15
 
     - name: Test
       run: go test -v ./...
