@@ -9,6 +9,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: root
+          POSTGRES_DB: root
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
       HOST: localhost
@@ -18,59 +33,30 @@ jobs:
       DBNAME: root
 
     strategy:
-      fail-fast: false
       matrix:
-        go_version: ['1.18', '1.20', '1.22']
+        go_version: ['1.17', '1.18', '1.22']
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go_version }}
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go_version }}
 
-      - name: Build containers
-        run: docker compose build
-
-      - name: Start containers
-        run: docker compose up -d
-
-      - name: Show containers
-        run: docker ps
-
-      - name: Wait PostgreSQL
-        run: |
-          echo "Waiting PostgreSQL..."
-          for i in {1..30}; do
-            docker exec $(docker ps -qf "ancestor=postgres") pg_isready && break
-            sleep 2
-          done
-
-      - name: Show containers
-        run: docker ps -a
-
-      - name: Database logs
-        run: docker compose logs postgres
-
-      - name: Check PostgreSQL readiness
-        run: |
-          docker exec $(docker ps -qf "ancestor=postgres") pg_isready || true
-
-      - name: Run tests
-        run: go test -v ./...
-
+    - name: Test
+      run: go test -v ./...
+ 
   build:
     needs: test
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
 
-      - name: Build
-        run: go build -v main.go
+    - name: Build
+      run: go build -v main.go
