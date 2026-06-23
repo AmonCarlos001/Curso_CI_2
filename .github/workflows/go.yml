@@ -1,15 +1,12 @@
 name: Go
-
 on:
   push:
-    branches: [ '**' ]
+    branches: [ Aula_1, Aula_2 ]
   pull_request:
-    branches: [ '**' ]
-
+    branches: [ Aula_1, Aula_2 ]
 jobs:
-
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     env:
       HOST: localhost
       PORT: 5432
@@ -21,22 +18,20 @@ jobs:
         go_version: ['1.18', '1.17', '>=1.18']
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go_version }}
-      
+ 
     - name: Build-DB
       run: docker-compose build
-      
+ 
     - name: Create-DB
       run: docker-compose up -d
-
     - name: Test
-      run: go test -v main_test.go 
-      
-  
+      run: go test -v ./...
+ 
+ 
   build:
     needs: test
     runs-on: ${{ matrix.os }}
