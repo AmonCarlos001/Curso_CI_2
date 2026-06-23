@@ -47,6 +47,16 @@ jobs:
             sleep 2
           done
 
+      - name: Show containers
+        run: docker ps -a
+
+      - name: Database logs
+        run: docker compose logs postgres
+
+      - name: Check PostgreSQL readiness
+        run: |
+          docker exec $(docker ps -qf "ancestor=postgres") pg_isready || true
+
       - name: Run tests
         run: go test -v ./...
 
