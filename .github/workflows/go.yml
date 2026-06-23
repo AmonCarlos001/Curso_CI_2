@@ -14,7 +14,7 @@ jobs:
       HOST: localhost
       PORT: 5432
       USER: root
-      PASSWORD: root
+      PASSWORD: ${{ secrets.DB_PASSWORD }}
       DBNAME: root
 
     strategy:
