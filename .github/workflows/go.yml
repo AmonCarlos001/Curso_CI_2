@@ -9,42 +9,68 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     env:
       HOST: localhost
       PORT: 5432
       USER: root
       PASSWORD: root
       DBNAME: root
+
     strategy:
+      fail-fast: false
       matrix:
         go_version: ['1.18', '1.20', '1.22']
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ matrix.go_version }}
- 
-    - name: Build-DB
-      run: docker compose build
- 
-    - name: Create-DB
-      run: docker compose up -d
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go_version }}
 
-    - name: Test
-      run: go test -v ./...
- 
+      - name: Build containers
+        run: docker compose build
+
+      - name: Start containers
+        run: docker compose up -d
+
+      - name: Show containers
+        run: docker ps
+
+      - name: Wait PostgreSQL
+        run: |
+          echo "Waiting PostgreSQL..."
+          for i in {1..30}; do
+            docker exec $(docker ps -qf "ancestor=postgres") pg_isready && break
+            sleep 2
+          done
+
+      - name: Show containers
+        run: docker ps -a
+
+      - name: Database logs
+        run: docker compose logs postgres
+
+      - name: Check PostgreSQL readiness
+        run: |
+          docker exec $(docker ps -qf "ancestor=postgres") pg_isready || true
+
+      - name: Run tests
+        run: go test -v ./...
+
   build:
     needs: test
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: '1.22'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
 
-    - name: Build
-      run: go build -v main.go
+      - name: Build
+        run: go build -v main.go
